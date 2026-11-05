@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deni.ai — ансамбль ИИ-моделей</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+  :root{
+    --bg:#0a0c11; --panel:#10131b; --panel2:#141824; --line:#222736;
+    --text:#e9edf6; --muted:#8a92a8; --accent:#5b8cff; --accent2:#8b5bff;
+    --ok:#3ddc97; --warn:#ffc857; --bad:#ff6b7d;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:radial-gradient(1200px 800px at 75% -15%, #17203a 0%, #0a0c11 55%), var(--bg);
+    color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;
+    font-size:15px; line-height:1.6;
+  }
+  .wrap{max-width:1180px; margin:0 auto; padding:18px 20px 60px}
+  .hidden{display:none !important}
+
+  /* —— экран входа —— */
+  .gate{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px}
+  .gate .card{
+    width:100%; max-width:400px; background:linear-gradient(180deg,#141826,#10131c);
+    border:1px solid var(--line); border-radius:20px; padding:34px 28px 26px;
+    box-shadow:0 30px 80px rgba(0,0,0,.55);
+  }
+  .gate .logo{display:flex; flex-direction:column; align-items:center; gap:14px; margin-bottom:26px}
+  .gate .mark{width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex;align-items:center;justify-content:center; box-shadow:0 12px 30px rgba(91,140,255,.35)}
+  .gate .brand{font-size:22px;font-weight:700;letter-spacing:-.4px}
+  .gate .brand span{color:var(--accent)}
+  .gate .sub{color:var(--muted);font-size:13px;text-align:center;line-height:1.5;margin-top:-6px}
+  .gate label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
+  .gate .field{position:relative}
+  .gate input{
+    width:100%; padding:14px 46px 14px 14px; border-radius:12px; font-size:15px;
+    background:#0c0f16; border:1px solid var(--line); color:var(--text); outline:none;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .gate input:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(91,140,255,.15)}
+  .gate .eye{position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:0;
+    color:var(--muted); cursor:pointer; padding:8px; font-size:15px; line-height:1}
+  .gate .go{
+    width:100%; margin-top:18px; padding:14px; border-radius:12px; border:0; cursor:pointer;
+    background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; font-size:15px; font-weight:600;
+  }
+  .gate .go:disabled{opacity:.6;cursor:default}
+  .gate .err{color:#ff7a85; font-size:13px; min-height:18px; margin-top:12px; text-align:center}
+  .gate .foot{color:#5c6479; font-size:11.5px; text-align:center; margin-top:18px; line-height:1.5}
+
+  /* header */
+  header{display:flex; align-items:center; gap:12px; padding:6px 0 20px}
+  .mark-sm{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex;align-items:center;justify-content:center; flex:0 0 auto; box-shadow:0 8px 22px rgba(91,140,255,.3)}
+  .brand-sm{font-size:19px;font-weight:700;letter-spacing:-.3px}
+  .brand-sm span{color:var(--accent)}
+  .tag{font-size:11px; color:var(--muted); border:1px solid var(--line); padding:2px 8px; border-radius:20px; margin-left:2px}
+  .spacer{flex:1}
+  .ghost{background:none;border:1px solid var(--line);color:var(--muted);padding:8px 12px;border-radius:10px;cursor:pointer;font-size:13px}
+  .ghost:hover{color:var(--text); border-color:#333c53}
+
+  .layout{display:grid; grid-template-columns:1.55fr 1fr; gap:18px; align-items:start}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr} }
+
+  .card{background:linear-gradient(180deg,var(--panel2),var(--panel)); border:1px solid var(--line);
+    border-radius:16px; padding:16px}
+  .card h2{margin:0 0 12px; font-size:13px; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); font-weight:600}
+
+  textarea{width:100%; min-height:110px; resize:vertical; background:#0b0e15; color:var(--text);
+    border:1px solid var(--line); border-radius:12px; padding:13px; font-family:inherit; font-size:15px; outline:none; line-height:1.55}
+  textarea:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(91,140,255,.13)}
+
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px}
+  .modes{display:flex; gap:6px; background:#0b0e15; border:1px solid var(--line); padding:4px; border-radius:12px}
+  .modes button{background:none;border:0;color:var(--muted);padding:7px 11px;border-radius:9px;cursor:pointer;font-size:13px}
+  .modes button.on{background:#1c2338; color:var(--text)}
+  .send{margin-left:auto; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; border:0;
+    padding:11px 20px; border-radius:12px; font-size:14px; font-weight:600; cursor:pointer}
+  .send:disabled{opacity:.55; cursor:default}
+
+  .hint{color:#5f677d; font-size:12px; margin-top:10px}
+  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px}
+  .chip{background:#0e1220; border:1px solid var(--line); color:#a9b2c7; font-size:12.5px; padding:6px 11px;
+    border-radius:20px; cursor:pointer}
+  .chip:hover{color:var(--text); border-color:#39435c}
+
+  .agents{display:flex; flex-direction:column; gap:8px}
+  .agent{display:flex; gap:10px; align-items:flex-start; padding:9px 10px; border-radius:11px;
+    background:#0c0f17; border:1px solid #1a1f2c; transition:border-color .2s, background .2s}
+  .agent .dot{width:9px;height:9px;border-radius:50%;background:#39405a; margin-top:7px; flex:0 0 auto}
+  .agent .nm{font-size:13.5px; font-weight:600}
+  .agent .md{font-size:11.5px; color:#6f7891; word-break:break-word}
+  .agent .st{margin-left:auto; font-size:11px; color:#6f7891; white-space:nowrap; padding-left:8px}
+  .agent.working{border-color:#3a4d80; background:#0f1524}
+  .agent.working .dot{background:var(--warn); animation:pulse 1s infinite}
+  .agent.done{border-color:#1f4034}
+  .agent.done .dot{background:var(--ok)}
+  .agent.error{border-color:#4a2530}
+  .agent.error .dot{background:var(--bad)}
+  @keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
+
+  .answer{margin-top:18px}
+  .answer .body{word-wrap:break-word; font-size:15.5px; line-height:1.75}
+  .answer .body p{margin:0 0 12px}
+  .answer .body p:last-child{margin-bottom:0}
+  .answer .body h2,.answer .body h3,.answer .body h4{margin:20px 0 10px; line-height:1.3; letter-spacing:-.2px}
+  .answer .body h2{font-size:20px} .answer .body h3{font-size:17.5px} .answer .body h4{font-size:16px}
+  .answer .body ul,.answer .body ol{margin:0 0 12px; padding-left:22px}
+  .answer .body li{margin:4px 0}
+  .answer .body code{background:#0b0e15; padding:1px 5px; border-radius:5px; font-size:13.5px; color:#a9c2ff}
+  .answer .body pre.code{background:#080b11; border:1px solid #1b2130; border-radius:10px; padding:13px 14px;
+    overflow-x:auto; margin:0 0 14px; position:relative}
+  .answer .body pre.code code{background:none; padding:0; color:#d6e2ff; font-size:13px; line-height:1.6; white-space:pre}
+  .answer .body pre.code[data-lang]::before{content:attr(data-lang); position:absolute; top:6px; right:10px;
+    font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:#5f6b85}
+  .answer .body hr{border:0; border-top:1px solid var(--line); margin:18px 0}
+  .answer .body a{color:#8fb2ff}
+  .answer .body .tbl{overflow-x:auto; margin:0 0 14px}
+  .answer .body table{border-collapse:collapse; font-size:14px; min-width:100%}
+  .answer .body th,.answer .body td{border:1px solid #232a3b; padding:7px 10px; text-align:left; vertical-align:top}
+  .answer .body th{background:#141a28; font-weight:600}
+  .answer .body strong{color:#fff}
+
+  .meta{display:flex; gap:12px; align-items:center; color:#6f7891; font-size:12px; margin-top:14px; flex-wrap:wrap}
+  .copy{background:#0e1220; border:1px solid var(--line); color:#a9b2c7; font-size:12px; padding:6px 12px;
+    border-radius:9px; cursor:pointer}
+  .copy:hover{color:var(--text)}
+  .empty{color:#5f677d; font-size:14px; padding:14px 2px}
+  .thinking{display:flex; gap:6px; align-items:center; color:var(--muted); font-size:13.5px; padding:10px 0}
+  .thinking i{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;animation:bounce 1.2s infinite}
+  .thinking i:nth-child(2){animation-delay:.15s;background:#7a6bff}
+  .thinking i:nth-child(3){animation-delay:.3s;background:var(--accent2)}
+  @keyframes bounce{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+  .banner{padding:9px 12px; border-radius:10px; font-size:13px; margin-top:12px}
+  .banner.err{background:#2a1219; border:1px solid #5c2634; color:#ff9aa6}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ ЭКРАН ВХОДА ═══════════ -->
+<div class="gate" id="gate">
+  <div class="card" id="loginForm">
+    <div class="logo">
+      <div class="mark">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-label="Deni.ai">
+          <path d="M9 6.5h8.2c6 0 10 4.2 10 10.5s-4 10.5-10 10.5H9V6.5Z" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"/>
+          <circle cx="15.5" cy="12" r="1.9" fill="#fff"/>
+          <circle cx="15.5" cy="17" r="1.9" fill="#fff" opacity=".75"/>
+          <circle cx="15.5" cy="22" r="1.9" fill="#fff" opacity=".5"/>
+        </svg>
+      </div>
+      <div class="brand">Deni<span>.ai</span></div>
+      <div class="sub">Закрытая система.<br>Несколько ИИ-моделей работают над ответом вместе.</div>
+    </div>
+    <label for="pw">Пароль доступа</label>
+    <div class="field">
+      <input id="pw" type="password" autocomplete="current-password" placeholder="••••••••" autofocus>
+      <button class="eye" type="button" id="eye" title="Показать пароль">👁</button>
+    </div>
+    <button class="go" id="go" type="button">Войти</button>
+    <div class="err" id="loginErr"></div>
+    <div class="foot">Доступ выдаётся владельцем Deni.ai.<br>Сессия действует 12 часов.</div>
+  </div>
+</div>
+
+<!-- ═══════════ ПРИЛОЖЕНИЕ ═══════════ -->
+<div class="wrap hidden" id="app">
+  <header>
+    <div class="mark-sm">
+      <svg width="24" height="24" viewBox="0 0 34 34" fill="none" aria-label="Deni.ai">
+        <path d="M9 6.5h8.2c6 0 10 4.2 10 10.5s-4 10.5-10 10.5H9V6.5Z" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"/>
+        <circle cx="15.5" cy="12" r="1.9" fill="#fff"/>
+        <circle cx="15.5" cy="17" r="1.9" fill="#fff" opacity=".75"/>
+        <circle cx="15.5" cy="22" r="1.9" fill="#fff" opacity=".5"/>
+      </svg>
+    </div>
+    <div class="brand-sm">Deni<span>.ai</span></div>
+    <div class="tag">ансамбль моделей</div>
+    <div class="spacer"></div>
+    <button class="ghost" id="logout">Выйти</button>
+  </header>
+
+  <div class="layout">
+    <div>
+      <div class="card">
+        <h2>Запрос</h2>
+        <textarea id="q" placeholder="Спросите что угодно — модели распределят роли и соберут общий ответ…"></textarea>
+        <div class="row">
+          <div class="modes" id="modes">
+            <button data-mode="fast">Быстро</button>
+            <button data-mode="balanced" class="on">Стандарт</button>
+            <button data-mode="deep">Глубоко</button>
+            <button data-mode="code">Код</button>
+          </div>
+          <button class="send" id="send">Запустить ансамбль</button>
+        </div>
+        <div class="chips">
+          <div class="chip">Сравни REST и GraphQL для мобильного приложения</div>
+          <div class="chip">Придумай название для кофейни и слоган</div>
+          <div class="chip">Объясни, как работает JWT, простыми словами</div>
+        </div>
+        <div class="hint">Модель выбирать нельзя — Deni.ai сам распределяет роли между разными ИИ.</div>
+      </div>
+
+      <div class="card answer" style="margin-top:18px">
+        <h2>Итоговый ответ</h2>
+        <div id="out" class="empty">Здесь появится ответ команды.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Команда моделей</h2>
+      <div class="agents" id="agents"></div>
+      <div class="hint" id="providers" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const gate = $('#gate');
+const appBox = $('#app');
+const out = $('#out');
+const agentsBox = $('#agents');
+let mode = 'balanced';
+let busy = false;
+
+/* ---------- токен доступа (работает и без cookie, в т.ч. внутри iframe) ---------- */
+const TOKEN_KEY = 'deni_token';
+const store = {
+  get() {
+    try { return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || ''; }
+    catch { return window.__deniToken || ''; }
+  },
+  set(t) {
+    window.__deniToken = t;
+    try { localStorage.setItem(TOKEN_KEY, t); } catch {}
+    try { sessionStorage.setItem(TOKEN_KEY, t); } catch {}
+  },
+  clear() {
+    window.__deniToken = '';
+    try { localStorage.removeItem(TOKEN_KEY); } catch {}
+    try { sessionStorage.removeItem(TOKEN_KEY); } catch {}
+  },
+};
+
+async function api(url, opts = {}) {
+  const headers = Object.assign({}, opts.headers || {});
+  const t = store.get();
+  if (t) headers['X-Deni-Token'] = t;
+  if (opts.body) headers['Content-Type'] = 'application/json';
+  return fetch(url, { ...opts, headers, credentials: 'same-origin' });
+}
+
+/* ---------------------------- вход ---------------------------- */
+$('#eye').addEventListener('click', () => {
+  const pw = $('#pw');
+  pw.type = pw.type === 'password' ? 'text' : 'password';
+  pw.focus();
+});
+
+async function doLogin() {
+  const err = $('#loginErr');
+  const go = $('#go');
+  err.textContent = '';
+  go.disabled = true; go.textContent = 'Проверяем…';
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ password: $('#pw').value }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      if (d.token) store.set(d.token);
+      enterApp();
+      return;
+    }
+    err.textContent = d.error || 'Ошибка входа';
+    $('#pw').value = ''; $('#pw').focus();
+  } catch (e2) {
+    err.textContent = 'Сервер недоступен';
+  }
+  go.disabled = false; go.textContent = 'Войти';
+}
+
+/* Клик и Enter — без <form>, чтобы работало в песочнице iframe (allow-forms часто отключён) */
+$('#go').addEventListener('click', doLogin);
+$('#pw').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); doLogin(); }
+});
+
+function enterApp() {
+  gate.classList.add('hidden');
+  appBox.classList.remove('hidden');
+  const url = new URL(location.href);
+  if (url.searchParams.get('token')) {          // чистим токен из адресной строки
+    url.searchParams.delete('token');
+    history.replaceState(null, '', url.pathname + (url.search || ''));
+  }
+  loadModels();
+}
+
+function showGate() {
+  appBox.classList.add('hidden');
+  gate.classList.remove('hidden');
+  $('#go').disabled = false;
+  $('#go').textContent = 'Войти';
+}
+
+$('#logout').addEventListener('click', async () => {
+  try { await api('/api/logout', { method: 'POST' }); } catch {}
+  store.clear();
+  showGate();
+});
+
+/* ---------------------------- интерфейс ---------------------------- */
+$('#modes').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-mode]');
+  if (!b) return;
+  [...document.querySelectorAll('#modes button')].forEach((x) => x.classList.remove('on'));
+  b.classList.add('on');
+  mode = b.dataset.mode;
+});
+
+document.querySelectorAll('.chip').forEach((c) => c.addEventListener('click', () => {
+  $('#q').value = c.textContent;
+  $('#q').focus();
+}));
+
+$('#q').addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') $('#send').click();
+});
+
+function statusText(s) {
+  return s === 'working' ? 'работает…' : s === 'done' ? 'готово' : s === 'error' ? 'сбой' : 'ожидает';
+}
+
+async function loadModels() {
+  try {
+    const r = await api('/api/models');
+    if (r.status === 401) { store.clear(); showGate(); return; }
+    const d = await r.json();
+    agentsBox.innerHTML = d.models.map((m) => `
+      <div class="agent" id="agent-${m.role}">
+        <span class="dot"></span>
+        <div>
+          <div class="nm">${m.title}</div>
+          <div class="md" data-note="${m.note}">${m.label} · ${m.note}</div>
+        </div>
+        <div class="st">ожидает</div>
+      </div>`).join('');
+    $('#providers').textContent = 'Активные провайдеры: ' + d.providers.join(', ');
+  } catch (e) { /* сеть недоступна — покажем при запуске */ }
+}
+
+function setStage(d) {
+  const el = document.getElementById('agent-' + d.role);
+  if (!el) return;
+  el.classList.remove('working', 'done', 'error');
+  el.classList.add(d.status);
+  const md = el.querySelector('.md');
+  if (d.label) md.textContent = d.label + ' · ' + (md.dataset.note || '');
+  const st = el.querySelector('.st');
+  st.textContent = d.status === 'done' && d.ms ? (d.ms / 1000).toFixed(1) + ' с' : statusText(d.status);
+}
+
+function resetAgents() {
+  document.querySelectorAll('.agent').forEach((el) => {
+    el.classList.remove('working', 'done', 'error');
+    el.querySelector('.st').textContent = 'ожидает';
+  });
+}
+
+function esc(t) {
+  return t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+}
+
+/* лёгкий рендер Markdown: заголовки, списки, код, таблицы, жирный, курсив */
+function renderInline(t) {
+  return esc(t)
+    .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+}
+
+function renderAnswer(text) {
+  const lines = text.replace(/\r/g, '').split('\n');
+  const html = [];
+  let i = 0;
+  let inList = null;
+  let para = [];
+
+  const flushPara = () => {
+    if (para.length) { html.push(`<p>${renderInline(para.join(' '))}</p>`); para = []; }
+  };
+  const closeList = () => { if (inList) { html.push(`</${inList}>`); inList = null; } };
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    const fence = /^\s*```(\w*)\s*$/.exec(line);
+    if (fence) {
+      flushPara(); closeList();
+      const lang = fence[1] || '';
+      const buf = [];
+      i++;
+      while (i < lines.length && !/^\s*```\s*$/.test(lines[i])) { buf.push(lines[i]); i++; }
+      i++;
+      html.push(`<pre class="code"${lang ? ` data-lang="${esc(lang)}"` : ''}><code>${esc(buf.join('\n'))}</code></pre>`);
+      continue;
+    }
+
+    if (/^\s*\|.*\|\s*$/.test(line) && i + 1 < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
+      flushPara(); closeList();
+      const cells = (r) => r.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+      const head = cells(line);
+      i += 2;
+      const rows = [];
+      while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) { rows.push(cells(lines[i])); i++; }
+      html.push('<div class="tbl"><table><thead><tr>' + head.map((c) => `<th>${renderInline(c)}</th>`).join('')
+        + '</tr></thead><tbody>' + rows.map((r) => '<tr>' + r.map((c) => `<td>${renderInline(c)}</td>`).join('') + '</tr>').join('')
+        + '</tbody></table></div>');
+      continue;
+    }
+
+    const h = /^(#{1,6})\s+(.*)$/.exec(line);
+    if (h) {
+      flushPara(); closeList();
+      const lvl = Math.min(6, h[1].length + 1);
+      html.push(`<h${lvl}>${renderInline(h[2])}</h${lvl}>`);
+      i++; continue;
+    }
+
+    if (/^\s*([-*_])\1{2,}\s*$/.test(line)) { flushPara(); closeList(); html.push('<hr>'); i++; continue; }
+
+    const ul = /^\s*[-*+]\s+(.*)$/.exec(line);
+    const ol = /^\s*(\d+)[.)]\s+(.*)$/.exec(line);
+    if (ul || ol) {
+      flushPara();
+      const want = ul ? 'ul' : 'ol';
+      if (inList !== want) { closeList(); html.push(`<${want}>`); inList = want; }
+      html.push(`<li>${renderInline(ul ? ul[1] : ol[2])}</li>`);
+      i++; continue;
+    }
+
+    if (!line.trim()) { flushPara(); closeList(); i++; continue; }
+
+    closeList();
+    para.push(line.trim());
+    i++;
+  }
+  flushPara(); closeList();
+  return html.join('');
+}
+
+/* ---------------------------- запуск ансамбля ---------------------------- */
+async function ask() {
+  const question = $('#q').value.trim();
+  if (!question || busy) return;
+  busy = true;
+  resetAgents();
+  $('#send').disabled = true;
+  $('#send').textContent = 'Работаем…';
+  out.className = '';
+  out.innerHTML = '<div class="thinking"><i></i><i></i><i></i><span>Модели совещаются…</span></div>';
+  const t0 = Date.now();
+
+  try {
+    const res = await api('/api/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question, mode }),
+    });
+    if (res.status === 401) { store.clear(); showGate(); throw new Error('Сессия истекла — войдите заново'); }
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(d.error || 'Ошибка сервера (' + res.status + ')');
+    }
+
+    const ctype = res.headers.get('content-type') || '';
+    let final = null;
+    if (!res.body || !ctype.includes('event-stream')) {
+      // прокси вернул обычный JSON — обрабатываем как есть
+      const d = await res.json();
+      if (d.error) throw new Error(d.error);
+      final = d;
+    } else {
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let idx;
+        while ((idx = buf.indexOf('\n\n')) >= 0) {
+          const chunk = buf.slice(0, idx).trim();
+          buf = buf.slice(idx + 2);
+          if (!chunk.startsWith('data:')) continue;
+          let ev;
+          try { ev = JSON.parse(chunk.slice(5).trim()); } catch { continue; }
+          if (ev.type === 'stage') setStage(ev);
+          if (ev.type === 'final') final = ev;
+          if (ev.type === 'error') throw new Error(ev.error);
+        }
+      }
+      // поток закрылся без финального события (обрезал прокси) — добираем обычным запросом
+      if (!final) {
+        const r2 = await api('/api/ask-sync', { method: 'POST', body: JSON.stringify({ question, mode }) });
+        const d = await r2.json();
+        if (!r2.ok || d.error) throw new Error(d.error || 'Ошибка сервера');
+        final = d;
+      }
+    }
+    if (!final || !final.answer) throw new Error('Пустой ответ от сервера');
+
+    if (final.cached) document.querySelectorAll('.agent').forEach((el) => {
+      el.classList.add('done'); el.querySelector('.st').textContent = 'кэш';
+    });
+
+    out.innerHTML = `<div class="body">${renderAnswer(final.answer)}</div>`;
+    const usedCount = Object.keys(final.used || {}).length;
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.innerHTML = `<span>${usedCount} моделей в работе</span><span>·</span>`
+      + `<span>${final.cached ? 'из кэша' : ((final.ms || Date.now() - t0) / 1000).toFixed(1) + ' с'}</span>`;
+    const copy = document.createElement('button');
+    copy.className = 'copy';
+    copy.textContent = 'Скопировать';
+    copy.onclick = () => {
+      const done = () => { copy.textContent = 'Скопировано ✓'; setTimeout(() => (copy.textContent = 'Скопировать'), 1500); };
+      if (navigator.clipboard) navigator.clipboard.writeText(final.answer).then(done).catch(done);
+      else done();
+    };
+    meta.appendChild(copy);
+    out.appendChild(meta);
+  } catch (e) {
+    const msg = String(e.message || e);
+    out.innerHTML = `<div class="banner err">${esc(msg)}`
+      + (msg === 'Сервер недоступен' ? '<div style="margin-top:8px;color:#9aa4bb">Проверьте, что сервер запущен (node server.js) и ссылка открыта в браузере, а не из другого сервиса.</div>' : '')
+      + `</div>`;
+  } finally {
+    busy = false;
+    $('#send').disabled = false;
+    $('#send').textContent = 'Запустить ансамбль';
+  }
+}
+
+$('#send').addEventListener('click', ask);
+
+/* ---------------------------- старт ---------------------------- */
+(async function boot() {
+  const urlToken = new URL(location.href).searchParams.get('token');
+  if (urlToken) store.set(urlToken);
+  const t = store.get();
+  if (!t) {                       // cookie могла остаться с прошлого раза
+    try {
+      const r = await fetch('/api/session', { credentials: 'same-origin' });
+      const d = await r.json();
+      if (d.authed) { enterApp(); return; }
+    } catch {}
+    showGate();
+    return;
+  }
+  try {
+    const r = await api('/api/session');
+    const d = await r.json();
+    if (d.authed) enterApp(); else { store.clear(); showGate(); }
+  } catch {
+    showGate();
+  }
+})();
+</script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a55dd627d8a8ddd3',t:'MTc5MzkwMjQ0OQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a55dd627d8a8ddd3',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
